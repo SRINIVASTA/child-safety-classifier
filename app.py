@@ -132,8 +132,9 @@ if st.button("Run Safety Triage Pipeline", type="primary", disabled=not is_ready
             elif data_mode == "Synthetic/Mock Data (Testing)" and "Benign" in mock_scenario:
                 risk_prob = float(np.random.uniform(0.01, 0.09))
             else:
-                # PRODUCTION EVALUATION: Read raw model output, but provide a testing keyword override
-                raw_model_score = probabilities.item()
+                # CRITICAL FIX: Extract specifically index 1 which corresponds to high-risk classification
+                # Using probabilities[1].item() isolates a single element scalar correctly
+                raw_model_score = probabilities[1].item()
                 
                 # Check for high-risk verification keywords to trigger the triage alert path for your live files
                 trigger_words = ["critical", "flagged", "alert", "suspicious", "urgent", "abuse"]
