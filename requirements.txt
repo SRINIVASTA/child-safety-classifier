@@ -1,0 +1,7 @@
+streamlit
+torch
+transformers
+pillow
+pytest
+pytest-benchmark
+numpy
