@@ -10,9 +10,9 @@ from model import MultimodalEmbeddingBridge
 from utils import anonymize_text
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger("ThornProductionPipeline")
+logger = logging.getLogger("ChildProductionPipeline")
 
-st.set_page_config(page_title="Thorn // Unified Triage Dashboard", page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="Child // Unified Triage Dashboard", page_icon="🛡️", layout="wide")
 st.title("🛡️ Multimodal Content Triage Interface")
 st.caption("Senior ML Solution: Combining Synthetic Scenario Simulation & Dynamic Zero-Shot Production Uploads")
 
