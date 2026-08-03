@@ -6,8 +6,8 @@ from config import ContentSafetyConfig
 class MultimodalEmbeddingBridge(nn.Module):
     """
     Production Multimodal Projection Architecture.
-    Bypasses rigid linear heads by mapping text and vision into a shared,
-    normalized metric space to enable dynamic, open-vocabulary similarity analysis.
+    Maps text and vision into a shared, normalized space to enable 
+    dynamic similarity profiling and traditional inference capabilities.
     """
     def __init__(self, config: ContentSafetyConfig):
         super().__init__()
@@ -38,6 +38,6 @@ class MultimodalEmbeddingBridge(nn.Module):
         # Execute Late Fusion Concatenation
         fused = torch.cat((text_features, vision_features), dim=1)
         
-        # Project into metric space and L2-normalize to ensure distance metrics stay stable
+        # Project into metric space and L2-normalize
         latent_vectors = self.unified_space(fused)
         return nn.functional.normalize(latent_vectors, p=2, dim=1)
