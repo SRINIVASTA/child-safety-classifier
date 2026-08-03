@@ -132,13 +132,13 @@ with col2:
 # --- PIPELINE CALCULATION EXECUTION LAYER ---
 st.write("---")
 
-# Senior ML UX Fix: Enable the execution pass if text is written OR if an actual image payload is present
+# Enable the execution pass if text is written OR if an actual image payload is present
 is_ready = bool(text_input.strip()) or (uploaded_file is not None if data_mode == "Actual Data Upload (Production)" else False)
 
 if st.button("Run Safety Triage Pipeline", type="primary", disabled=not is_ready):
     with st.spinner("Processing tokenizers and extracting cross-modal embeddings..."):
         try:
-            # Senior ML Guardrail: Handle an image-only ingestion pass elegantly by creating an implicit baseline token string
+            # Handle an image-only ingestion pass elegantly by creating an implicit baseline token string
             effective_text = text_input.strip()
             if not effective_text:
                 effective_text = "Standard unlabelled production image payload stream asset."
@@ -174,8 +174,9 @@ if st.button("Run Safety Triage Pipeline", type="primary", disabled=not is_ready
                 logits = torch.tensor([[sim_to_safe * 10.0, sim_to_danger * 10.0]])
                 probabilities = F.softmax(logits, dim=1).squeeze(0)
                 
-                # Safely isolate element 1 (Risk mapping dimension) without multi-element scalar failures
-                risk_prob = probabilities.item()
+                # SENIOR ML CRITICAL FIX: Explicitly target index [1] of the 1D tensor to pull out a pristine float scalar,
+                # ensuring that single-modality or dual-modality tensors extract cleanly without dimension collision.
+                risk_prob = probabilities[1].item()
             
             safe_prob = 1.0 - risk_prob
             
@@ -184,6 +185,7 @@ if st.button("Run Safety Triage Pipeline", type="primary", disabled=not is_ready
             m1, m2 = st.columns(2)
             m1.metric("Safe / Clear Score", f"{safe_prob * 100:.2f}%")
             m2.metric("High-Risk / Triage Score", f"{risk_prob * 100:.2f}%")
+            
             
             # 6. Guardrail Boundary Enforcement Check
             if risk_prob > triage_threshold:
