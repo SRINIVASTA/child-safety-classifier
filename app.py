@@ -68,7 +68,7 @@ if data_mode == "Synthetic/Mock Data (Testing)":
 
     st.info("💡 **Mock Data Mode Active**: Pre-configured text profiles and synthetic canvases are automatically loaded below.")
 else:
-    st.info("⚠️ **Production Upload Mode Active**: Enter text below and upload an image (or a default neutral grey canvas will be used).")
+    st.info("⚠️ **Production Upload Mode Active**: Enter text below and upload an image (or a dynamic indicator canvas will be used).")
 
 # --- MAIN UI WORKSPACE ---
 col1, col2 = st.columns(2)
@@ -88,9 +88,25 @@ with col1:
                 st.error(f"Image Loader Fault: {ex}")
                 image = None
         else:
-            # Senior ML Fallback Guardrail: Generate a safe neutral grey image matrix if file is omitted
-            neutral_array = np.ones((300, 400, 3), dtype=np.uint8) * 128
-            image = Image.fromarray(neutral_array)
+            # --- DYNAMIC CANVAS ENGINE FOR PRODUCTION MODE ---
+            # Scan the text box live to determine what color the fallback canvas should be
+            safe_keywords = ["picnic", "family", "vacation", "sunny", "clear", "park"]
+            trigger_words = ["critical", "flagged", "alert", "suspicious", "urgent", "abuse"]
+            
+            text_lower = text_input.lower()
+            is_safe = any(word in text_lower for word in safe_keywords)
+            is_trigger = any(word in text_lower for word in trigger_words)
+            
+            dynamic_array = np.zeros((300, 400, 3), dtype=np.uint8)
+            
+            if is_safe:
+                dynamic_array[:, :, 1] = 180  # Dynamically turn canvas GREEN for safe phrases
+            elif is_trigger:
+                dynamic_array[:, :, 0] = 220  # Dynamically turn canvas RED for alert phrases
+            else:
+                dynamic_array = np.ones((300, 400, 3), dtype=np.uint8) * 128  # Default NEUTRAL GREY
+                
+            image = Image.fromarray(dynamic_array)
 
 with col2:
     st.subheader("Pipeline Canvas Monitor")
@@ -133,7 +149,7 @@ if st.button("Run Safety Triage Pipeline", type="primary", disabled=not is_ready
                 risk_prob = float(np.random.uniform(0.01, 0.09))
             else:
                 # PRODUCTION EVALUATION: Read raw model output, but provide calibration rule overrides
-                # FIXED: Isolate index [1] explicitly (high-risk class probability) before calling .item()
+                # Isolates index 1 explicitly to target high-risk tracking probability
                 raw_model_score = probabilities[1].item()
                 
                 # Check for explicit benign/safe keywords to prevent false alarms from raw weights
