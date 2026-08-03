@@ -13,7 +13,7 @@ class MultimodalEmbeddingBridge(nn.Module):
         super().__init__()
         self.config = config
         
-        # Ingest frozen foundational transformer backbones
+        # Ingest foundational transformer backbones
         self.text_backbone = AutoModel.from_pretrained(config.TEXT_MODEL)
         self.vision_backbone = AutoModel.from_pretrained(config.VISION_MODEL).vision_model
         
@@ -25,7 +25,7 @@ class MultimodalEmbeddingBridge(nn.Module):
         self.unified_space = nn.Linear(config.PROJECTION_DIM * 2, config.PROJECTION_DIM)
 
     def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, pixel_values: torch.Tensor) -> torch.Tensor:
-        # Extract and project contextual text vectors
+        # Extract and project text vectors
         text_outputs = self.text_backbone(input_ids=input_ids, attention_mask=attention_mask)
         text_embeds = text_outputs.last_hidden_state[:, 0, :]  
         text_features = self.text_projection(text_embeds)       
