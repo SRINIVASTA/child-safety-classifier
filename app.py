@@ -133,7 +133,8 @@ if st.button("Run Safety Triage Pipeline", type="primary", disabled=not is_ready
                 risk_prob = float(np.random.uniform(0.01, 0.09))
             else:
                 # PRODUCTION EVALUATION: Read raw model output, but provide calibration rule overrides
-                raw_model_score = probabilities.item()
+                # FIXED: Isolate index [1] explicitly (high-risk class probability) before calling .item()
+                raw_model_score = probabilities[1].item()
                 
                 # Check for explicit benign/safe keywords to prevent false alarms from raw weights
                 safe_keywords = ["picnic", "family", "vacation", "sunny", "clear", "park"]
