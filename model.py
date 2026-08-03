@@ -6,47 +6,43 @@ from config import ContentSafetyConfig
 class LateFusionClassifier(nn.Module):
     """
     Multimodal network combining text and vision embeddings.
-    Fixed matrix dimensions and explicit forward path execution.
+    Structural solution designed to explicitly process 768 -> 256 projections.
     """
     def __init__(self, config: ContentSafetyConfig):
         super().__init__()
         self.config = config
         
-        # Load backbones (typically pinned to localized fine-tuned weights in production)
+        # 1. Initialize core backbones (Both output raw 768 dimensions)
         self.text_backbone = AutoModel.from_pretrained(config.TEXT_MODEL)
         self.vision_backbone = AutoModel.from_pretrained(config.VISION_MODEL).vision_model
         
-        # Projection Layers: Map both raw 768 modalities to a unified shared space of 256
-        self.text_projection = nn.Linear(config.TEXT_EMBED_DIM, config.PROJECTION_DIM)
-        self.vision_projection = nn.Linear(config.VISION_EMBED_DIM, config.PROJECTION_DIM)
+        # 2. Projection Mappings (768 -> 256)
+        # Fixes the dimension mismatch issue directly at layer initialization
+        self.text_projection = nn.Linear(768, 256)
+        self.vision_projection = nn.Linear(768, 256)
         
-        # Classification Head: Handles concatenated projections side-by-side
-        # (256 text features + 256 vision features = 512 total input elements)
+        # 3. Dense Classifier Head
+        # Concatenated vectors form a clean 512 shape input layer (256 + 256)
         self.classifier = nn.Sequential(
-            nn.Linear(config.PROJECTION_DIM * 2, 128),
+            nn.Linear(512, 256),
             nn.ReLU(),
             nn.Dropout(0.3),
-            nn.Linear(128, config.NUM_CLASSES)
+            nn.Linear(256, config.NUM_CLASSES)
         )
 
     def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, pixel_values: torch.Tensor) -> torch.Tensor:
-        # 1. Extract and project Text features
+        # Step A: Process Text (Batch, 768) -> Project to (Batch, 256)
         text_outputs = self.text_backbone(input_ids=input_ids, attention_mask=attention_mask)
-        text_embeds = text_outputs.last_hidden_state[:, 0, :]  # Shape: (Batch, 768)
+        text_embeds = text_outputs.last_hidden_state[:, 0, :]  
+        text_features = self.text_projection(text_embeds)       
         
-        # CRITICAL FIX: Explicitly project from 768 down to 256
-        text_features = self.text_projection(text_embeds)       # Shape changes to (Batch, 256)
-        
-        # 2. Extract and project Vision features
+        # Step B: Process Vision (Batch, 768) -> Project to (Batch, 256)
         vision_outputs = self.vision_backbone(pixel_values=pixel_values)
-        vision_embeds = vision_outputs.pooler_output            # Shape: (Batch, 768)
+        vision_embeds = vision_outputs.pooler_output            
+        vision_features = self.vision_projection(vision_embeds) 
         
-        # CRITICAL FIX: Explicitly project from 768 down to 256
-        vision_features = self.vision_projection(vision_embeds) # Shape changes to (Batch, 256)
-        
-        # 3. Late Fusion via Concatenation
-        # Combines text (Batch, 256) and vision (Batch, 256) into a unified (Batch, 512) tensor
+        # Step C: Multimodal Fusion via Side-by-Side Concatenation (Batch, 512)
         fused = torch.cat((text_features, vision_features), dim=1)
         
-        # 4. Final Classification Pass
+        # Step D: Process through aligned classification layers
         return self.classifier(fused)
