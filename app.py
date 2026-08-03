@@ -64,6 +64,7 @@ triage_threshold = st.sidebar.slider("Alert Sensitivity Cutoff:", min_value=0.10
 text_input = ""
 image = None
 mock_scenario = ""
+uploaded_file = None
 
 # --- INGESTION PATH ROUTING ---
 if data_mode == "Synthetic/Mock Data (Testing)":
@@ -130,17 +131,25 @@ with col2:
 
 # --- PIPELINE CALCULATION EXECUTION LAYER ---
 st.write("---")
-is_ready = bool(text_input.strip())
+
+# Senior ML UX Fix: Enable the execution pass if text is written OR if an actual image payload is present
+is_ready = bool(text_input.strip()) or (uploaded_file is not None if data_mode == "Actual Data Upload (Production)" else False)
 
 if st.button("Run Safety Triage Pipeline", type="primary", disabled=not is_ready):
     with st.spinner("Processing tokenizers and extracting cross-modal embeddings..."):
         try:
-            # 1. Obfuscate PII text string via utility hash layer before logging to infrastructure
-            masked_log_text = anonymize_text(text_input)
+            # Senior ML Guardrail: Handle an image-only ingestion pass elegantly by creating an implicit baseline token string
+            effective_text = text_input.strip()
+            if not effective_text:
+                effective_text = "Standard unlabelled production image payload stream asset."
+                st.caption("ℹ️ *System notice: Image-only run detected. Injected baseline textual anchor context.*")
+
+            # 1. Obfuscate text string via utility hash layer before logging to infrastructure terminal log channels
+            masked_log_text = anonymize_text(effective_text)
             logger.info(f"Processing payload execution. Mode: {data_mode} | Text_Hash: {masked_log_text}")
             
-            # 2. Parse features through standard transformer processors
-            text_feats = tokenizer(text_input, max_length=128, padding="max_length", truncation=True, return_tensors="pt")
+            # 2. Parse features through standard transformer processors using our effective text proxy variable
+            text_feats = tokenizer(effective_text, max_length=128, padding="max_length", truncation=True, return_tensors="pt")
             vision_feats = processor(images=image, return_tensors="pt")
             
             input_ids = text_feats["input_ids"].to(config.DEVICE)
@@ -166,7 +175,7 @@ if st.button("Run Safety Triage Pipeline", type="primary", disabled=not is_ready
                 probabilities = F.softmax(logits, dim=1).squeeze(0)
                 
                 # Safely isolate element 1 (Risk mapping dimension) without multi-element scalar failures
-                risk_prob = probabilities[1].item()
+                risk_prob = probabilities.item()
             
             safe_prob = 1.0 - risk_prob
             
