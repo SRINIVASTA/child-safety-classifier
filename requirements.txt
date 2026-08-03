@@ -5,3 +5,4 @@ pillow
 pytest
 pytest-benchmark
 numpy
+python-multipart
