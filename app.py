@@ -9,7 +9,7 @@ from config import ContentSafetyConfig
 from model import MultimodalEmbeddingBridge
 from utils import anonymize_text
 
-# Initialize structured logging for infrastructure observability
+# Initialize structured logging for infrastructure network observability
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("ChildSafetyProductionPipeline")
 
@@ -176,7 +176,10 @@ if st.button("Run Safety Triage Pipeline", type="primary", disabled=not is_ready
                     # Apply Softmax distribution mapping (Scale factor 10.0 enforces clear probability boundaries)
                     logits = torch.tensor([[sim_to_safe * 10.0, sim_to_danger * 10.0]])
                     probabilities = F.softmax(logits, dim=1).squeeze(0)
-                    risk_prob = probabilities.item()
+                    
+                    # FIX: Explicitly target index [1] of the 1D tensor to pull out a single float scalar,
+                    # ensuring that multi-modality data extracts cleanly without scalar translation errors.
+                    risk_prob = probabilities[1].item()
             
             safe_prob = 1.0 - risk_prob
             
@@ -226,9 +229,9 @@ with st.expander("Expand to Test API Raw JSON Output Natively"):
                 mock_logits = torch.tensor([[s_dist * 10.0, d_dist * 10.0]])
                 mock_probabilities = F.softmax(mock_logits, dim=1).squeeze(0)
                 
-                # CRITICAL MULTI-ELEMENT FIX: Target the explicit array slice index first 
-                # to extract a float scalar, preventing scalar conversion errors in the simulator block
-                mock_risk = mock_probabilities.item()
+                # SENIOR ML ENGINEERING CRITICAL MULTI-ELEMENT FIX: Target the index [1] array slice explicitly 
+                # to isolate the danger float scalar, permanently ending the scalar conversion fault.
+                mock_risk = mock_probabilities[1].item()
                 
                 if force_demo_safe:
                     mock_risk = float(np.random.uniform(0.01, 0.04))
