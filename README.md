@@ -3,6 +3,8 @@
 
 An advanced, privacy-first Trust & Safety engineering solution built to automate the triage, classification, and analysis of multi-modal data streams (Text and Vision). This architecture integrates code-safe synthetic scenario simulations with dynamic, zero-shot open-vocabulary metric projections to intercept child safety violations without relying on static keyword lists.
 
+🌐 **Live Interactive Web App:** [Launch Live Streamlit Dashboard](https://child-safety-classifier-twuseeilihqbsyshxk7rne.streamlit.app/)
+
 ---
 
 ## 🏗️ Repository Architecture Tree
