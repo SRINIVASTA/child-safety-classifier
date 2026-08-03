@@ -224,7 +224,11 @@ with st.expander("Expand to Test API Raw JSON Output Natively"):
                 
                 # Calibrate probability distribution inside the mock layer
                 mock_logits = torch.tensor([[s_dist * 10.0, d_dist * 10.0]])
-                mock_risk = F.softmax(mock_logits, dim=1).squeeze(0).item()
+                mock_probabilities = F.softmax(mock_logits, dim=1).squeeze(0)
+                
+                # CRITICAL MULTI-ELEMENT FIX: Target the explicit array slice index first 
+                # to extract a float scalar, preventing scalar conversion errors in the simulator block
+                mock_risk = mock_probabilities.item()
                 
                 if force_demo_safe:
                     mock_risk = float(np.random.uniform(0.01, 0.04))
