@@ -1,0 +1,22 @@
+# Python environment tracking
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pytest and coverage artifacts
+.pytest_cache/
+.benchmarks/
+htmlcov/
+.coverage
+
+# Deep learning weight checkpoints
+*.pt
+*.pth
+*.bin
+*.onnx
+
+# System file logs
+*.log
+.DS_Store
